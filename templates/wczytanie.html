@@ -10,13 +10,21 @@
       ObliGEO - obliczenia
     </h1>
 <h3>Konwersja wysokościowa współrzędnych</h3>
+Wybierz plik do doknania konwersji - rozdzielany znakiem tabulacji<BR>
+<BR>
+ <form action = "\konwersja_w" method = "POST" enctype = "multipart/form-data">
 
-      <form action = "http://localhost:5000/konwersja_w" method = "POST"
-         enctype = "multipart/form-data">
+  <div class="form-group">
+    <label>Różnica wysokości między układami</label>
+    <input type="txt" class="form-control" id="roznica" name="roznica" placeholder="Wpisz roznice">
+  </div>
+
+  <div class="form-group">
          <input type = "file" name = "file" />
          <input type = "submit"/>
-      </form>
+  </div>
+</form>
  <a href="\"><h3>Powrót do strony głównej</h3></a>
 
-  </body>
+</body>
 </html>
