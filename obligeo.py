@@ -82,7 +82,46 @@ def zmiananrxyh():
         wynik.to_csv (os.path.join(app.config['UPLOAD_FOLDER'], filename+'_nrhxy.txt'),sep='\t', index=False, header=False, float_format='%.2f') #eksport do txt/csv - z zachowaniem 2 miejsc po przecinku
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename+'_nrhxy.txt', as_attachment=True)
 
+#WSAD GEO_INFO
+@app.route('/wsadgeoinfo')
+def wsad_gi():
+    return render_template('wsad_geoinfo.html')
 
+@app.route('/wsad_geoinfo', methods =['GET', 'POST'])
+def wsad_geoinfo():
+    if request.method == 'POST':
+        datapom=request.form['datapom']
+        zgloszenie=request.form['zgloszenie']
+        f = request.files['file']
+        filename = secure_filename(f.filename)
+        f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        data = pd.read_csv(os.path.join(app.config['UPLOAD_FOLDER'], filename), sep='\t', header=None)  #utworzenie dataframe z pliku z pikietami
+        data[4]='GSPPRB'
+        data[5]='O'
+        data[6]=zgloszenie
+        data[7]=datapom
+        wynik=(data[[4,0,1,2,3,3,5,6,7]])   #tabela x, y ,h, rzg, kod, rodzja pom -pom. na osnowę, data pomiaru, kerg.n
+
+       #dodanie dodatkowych danych do pliku wsadowego
+        w_zakonczenie = '#Koniec'
+        poczatek0='# Plik wsadowy GEO-INFO 7, wygenerowany przez program Generator wsadów'
+        poczatek1='#_SEPARATOR=|'
+        poczatek2='#Punkty inne=_code.n|_number|_X|_Y|_H|RZG|MPD.n|KRG.n|DTP'
+        #zapis do plików txt
+        wynik.to_csv (os.path.join(app.config['UPLOAD_FOLDER'], filename+'_wsad.wsd'),sep='|', index=False, header=False, float_format='%.2f') #eksport do txt/csv - z zachowaniem 2 miejsc po przecinku
+        #dopisanie dodatkowych danych do pliku txt
+        plik = open(os.path.join(app.config['UPLOAD_FOLDER'], filename+'_wsad.wsd'),"r+")
+        linie=plik.readlines()
+        plik.seek(0, 0)
+        plik.write(poczatek0+'\n')
+        plik.write(poczatek1+'\n')
+        plik.write(poczatek2+'\n')
+        for linia in linie:
+            plik.write(linia)
+        plik.seek(0, os.SEEK_END)
+        plik.write(w_zakonczenie+'\n')
+        plik.close()
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename+'_wsad.wsd', as_attachment=True)
 
 if __name__ == '__main__':
    app.run(debug = True)
