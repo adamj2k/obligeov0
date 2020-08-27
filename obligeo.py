@@ -123,5 +123,27 @@ def wsad_geoinfo():
         plik.close()
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename+'_wsad.wsd', as_attachment=True)
 
+#WSAD TURBOMAP
+@app.route('/wsadturbomap')
+def wsad_tb():
+    return render_template('wsad_turbomap.html')
+@app.route('/wsad_turbomap', methods =['GET', 'POST'])
+def wsad_turbomap():
+    if request.method == 'POST':
+        datapom=request.form['datapom']
+        zgloszenie=request.form['zgloszenie']
+        f = request.files['file']
+        filename = secure_filename(f.filename)
+        f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        data = pd.read_csv(os.path.join(app.config['UPLOAD_FOLDER'], filename), sep='\t', header=None)  #utworzenie dataframe z pliku z pikietami
+        data[4]='pomiarNaOsnowe'
+        data[5]=zgloszenie
+        data[6]=datapom
+        wynik=(data[[0,1,2,3,4,6,5]])   #tabela nr, x, y ,h, zrodlo, , data pomiaru, operat
+        wynik.to_csv (os.path.join(app.config['UPLOAD_FOLDER'], filename+'_wsad.txt'),sep='\t', index=False, header=False, float_format='%.2f') #eksport do txt/csv - z zachowaniem 2 miejsc po przecinku
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename+'_wsad.txt', as_attachment=True)
+
+
+
 if __name__ == '__main__':
    app.run(debug = True)
