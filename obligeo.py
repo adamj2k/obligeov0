@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import zipfile
 from flask import Flask, render_template, request, redirect, url_for, send_file, send_from_directory
 from werkzeug.utils import secure_filename
 
@@ -143,7 +144,29 @@ def wsad_turbomap():
         wynik.to_csv (os.path.join(app.config['UPLOAD_FOLDER'], filename+'_wsad.txt'),sep='\t', index=False, header=False, float_format='%.2f') #eksport do txt/csv - z zachowaniem 2 miejsc po przecinku
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename+'_wsad.txt', as_attachment=True)
 
-
+#WSAD EWMAPA
+@app.route('/wsadewmapa')
+def wsad_ewm():
+    return render_template('wsad_ewmapa.html')
+@app.route('/wsad_ewmapa', methods =['GET', 'POST'])
+def wsad_ewmapa():
+    if request.method == 'POST':
+        pliki = request.files.getlist('file[]')
+        calosc=pd.DataFrame()   #utworzenie pustej tabeli do której będą zapisywane kolejne pliki
+        for file in pliki:
+            nazwa = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], nazwa))
+            #tutaj kod przetwarzania plików
+            data = pd.read_csv(os.path.join(app.config['UPLOAD_FOLDER'], nazwa), sep=None, header=None)  #utworzenie dataframe z pliku z pikietami
+            data[3]='4#'+nazwa
+            data[4]='1.00'
+            data[5]='359.60'
+            data[6]='7'
+            data[7]='"'+data[0].astype(str)+'"'
+            wynik=(data[[1,2,4,5,6,7,3]])   #tabela x, y ,1.0, 359.6, 7, nr, rodzaj, operat
+            calosc = calosc.append(wynik)                       #itercyjne dodawanie kolejnych plików do tabeli
+        calosc.to_csv (os.path.join(app.config['UPLOAD_FOLDER'], 'ewmapa_wsad.txt'),sep='\t', index=False, header=False, float_format='%.2f') #eksport do txt/csv - z zachowaniem 2 miejsc po przecinku
+        return send_from_directory(app.config['UPLOAD_FOLDER'], 'ewmapa_wsad.txt', as_attachment=True)
 
 if __name__ == '__main__':
    app.run(debug = True)

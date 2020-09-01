@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>OBLIGEO - przetwarzanie</title>
+    <link rel="stylesheet" type="text/css" href="static/style.css">
+  </head>
+  <body>
+    <h1>
+       ObliGEO - przetwarzanie plików i obliczenia
+    </h1>
+<h3>Generowanie wsadu do EwMAPA - dla wielu plików</h3>
+Wsad do ewmapy - <BR>
+<BR>
+ <form action = "\wsad_ewmapa" method = "POST" enctype = "multipart/form-data">
+  <BR>
+Wybierz pliki txt ze współrzędnymi rozdzielany znakiem tabulacji - nazwa pliku musi odpowiadać id zgłoszenia<BR>
+<BR>
+    <div class="form-group">
+         <input type = "file" name="file[]" multiple="" />
+         <input type = "submit" value="add"/>
+  </div>
+</form>
+ <a href="\"><h3>Powrót do strony głównej</h3></a>
+
+</body>
+</html>
