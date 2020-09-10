@@ -1,11 +1,13 @@
 import os
 import pandas as pd
 import zipfile
+import ezdxf
+import random
 from flask import Flask, render_template, request, redirect, url_for, send_file, send_from_directory
 from werkzeug.utils import secure_filename
 
 UPLOAD_FOLDER = 'temp_uploads'
-ALLOWED_EXTENSIONS = {'txt'}
+ALLOWED_EXTENSIONS = {'txt', 'dxf'}
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -148,6 +150,7 @@ def wsad_turbomap():
 @app.route('/wsadewmapa')
 def wsad_ewm():
     return render_template('wsad_ewmapa.html')
+
 @app.route('/wsad_ewmapa', methods =['GET', 'POST'])
 def wsad_ewmapa():
     if request.method == 'POST':
@@ -168,5 +171,35 @@ def wsad_ewmapa():
         calosc.to_csv (os.path.join(app.config['UPLOAD_FOLDER'], 'ewmapa_wsad.txt'),sep='\t', index=False, header=False, float_format='%.2f') #eksport do txt/csv - z zachowaniem 2 miejsc po przecinku
         return send_from_directory(app.config['UPLOAD_FOLDER'], 'ewmapa_wsad.txt', as_attachment=True)
 
+
+#WSP DO PLIKU DXF
+@app.route('/pktdodxf')
+def pktdodxf():
+    return render_template('pktdodxf.html')
+
+@app.route('/punkty_dxf', methods =['GET', 'POST'])
+def punkty_dxf():
+    if request.method == 'POST':
+        pliki = request.files.getlist('file[]')
+        przeglad=ezdxf.new(dxfversion='R2010')
+        model=przeglad.modelspace()
+        for file in pliki:
+            nazwa = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], nazwa))
+            #tutaj kod przetwarzania plików
+            dane = pd.read_csv(os.path.join(app.config['UPLOAD_FOLDER'], nazwa), sep=' ', header=None)
+            color = random.randint(2,220) #losowy kolor dla operatu
+            #wczytaj punkty do dxf
+            for index in dane.index:
+                wspolrzedne= (dane[2][index],dane[1][index])
+                tekst = dane[0][index]
+                #print (tekst+wspolrzedne)
+                model.add_text(tekst, dxfattribs={'layer':nazwa, 'color':color, 'height':5}).set_pos((wspolrzedne), align='LEFT')
+        #zapis pliku dxf
+            przeglad.saveas(os.path.join(app.config['UPLOAD_FOLDER'],'wczytane_wsp.dxf'))
+        return send_from_directory(app.config['UPLOAD_FOLDER'], 'wczytane_wsp.dxf', as_attachment=True)
+
+
 if __name__ == '__main__':
-   app.run(debug = True)
+    app.run(debug = True)
+
