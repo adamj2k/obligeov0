@@ -1,14 +1,19 @@
+﻿# - *- coding: utf- 8 - *-
 import os
 import pandas as pd
-import zipfile
-import ezdxf
 import random
-import csv
-import re
+import sys
+sys.path.append('/home/adamjawor/.local/lib/python2.7/site-packages/')
+import ezdxf
+import geopandas as gpd
+import shapely.geometry as geometry
+from shapely.geometry import Point, Polygon
 from flask import Flask, render_template, request, redirect, url_for, send_file, send_from_directory
 from werkzeug.utils import secure_filename
 
-UPLOAD_FOLDER = 'temp_uploads'
+
+
+UPLOAD_FOLDER = '/home/adamjawor/obligeov0/temp_uploads'
 ALLOWED_EXTENSIONS = {'txt', 'dxf'}
 
 app = Flask(__name__)
@@ -31,17 +36,17 @@ def konwersja_w():
         f = request.files['file']
         filename = secure_filename(f.filename)
         f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        zrodlo = open(os.path.join(app.config['UPLOAD_FOLDER'], filename)).readlines() #konwersja pliku źrodłowego
+        zrodlo = open(os.path.join(app.config['UPLOAD_FOLDER'], filename)).readlines() #konwersja pliku zrodlowego
         cel = open(os.path.join(app.config['UPLOAD_FOLDER'], filename+'_Am.txt'),'w')
         for s in zrodlo:
-             values = s.split("\t")   #dzieli plik tekstowy względem tab
-             #print("Nr:"+values[0] + ", X:"+ values[1] + ", y:"+ values[2] + ", H:"+ values[3]) #wyświetla zawartość pliku
-             h = float(values[3])+float(roznica)       #przeliczenie wysokości - wartość różnicy może być zmieniona
+             values = s.split("\t")   #dzieli plik tekstowy wzgledem tab
+             #print("Nr:"+values[0] + ", X:"+ values[1] + ", y:"+ values[2] + ", H:"+ values[3]) #wyswietla zawartosc pliku
+             h = float(values[3])+float(roznica)       #przeliczenie wysokosci - wartosc roznicy moze byc zmieniona
              cel.write(s.replace(values[3],str(h)))
         cel.close()
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename+'_Am.txt', as_attachment=True)
-    
-#wczytanie danych do zmiany nr x y h        
+
+#wczytanie danych do zmiany nr x y h
 @app.route('/zmiana')
 def zmiana():
     return render_template('zmiana.html')
@@ -52,12 +57,12 @@ def zmiananrxyh():
         f = request.files['file']
         filename = secure_filename(f.filename)
         f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        #raport=['lista plików z błędami danych']   #utworzenie listy na raport błedów
+        #raport=['lista plikow z bledami danych']   #utworzenie listy na raport bledow
         #data = pd.read_csv(f, sep='\t', header=None)  #utworzenie dataframe z pliku z pikietami
         """
             try:
-                data[1]=data[1].astype(float)   #kontrola czy wsp to liczby zmiennoprzecinkowe float64   
-            except:                                 #jeśli błąd wyświetl komunikat i zapisz nazwę blędnego pliku
+                data[1]=data[1].astype(float)   #kontrola czy wsp to liczby zmiennoprzecinkowe float64
+            except:                                 #jesli bład wyswietl komunikat i zapisz nazwe blednego pliku
                 #print('BŁĄD DANYCH W PLIKU - WSP X '+n)
                 blad=n+' blad wsp X'
                 raport.append(blad)
@@ -100,31 +105,12 @@ def wsad_geoinfo():
         f = request.files['file']
         filename = secure_filename(f.filename)
         f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        testowy = open(os.path.join(app.config['UPLOAD_FOLDER'], filename)).read()
-        podzial = csv.Sniffer().sniff(testowy).delimiter
-        print ('sperator to '+podzial)
-        if podzial ==' ' :
-            plikOdcz = open(os.path.join(app.config['UPLOAD_FOLDER'], filename)).readlines()
-            plikPop = open(os.path.join(app.config['UPLOAD_FOLDER'], filename+'_pop.txt'),"w")
-            for line in plikOdcz:
-                line = re.sub(r'^\s+' , '', line)
-                line = re.sub(r'\s+' , ' ', line)
-                print (line)
-                plikPop.write (line+'\n')
-            plikPop.close()
-            data = pd.read_csv((os.path.join(app.config['UPLOAD_FOLDER'], filename+'_pop.txt')), sep=podzial, header=None)  #utworzenie dataframe z pliku z pikietami
-            data[4]='GSPPRB'
-            data[5]='O'
-            data[6]=zgloszenie
-            data[7]=datapom
-            wynik=(data[[4,0,1,2,3,3,5,6,7]])   #tabela x, y ,h, rzg, kod, rodzja pom -pom. na osnowę, data pomiaru, kerg.n
-        else:        
-            data = pd.read_csv(os.path.join(app.config['UPLOAD_FOLDER'], filename), sep=podzial, header=None)  #utworzenie dataframe z pliku z pikietami
-            data[4]='GSPPRB'
-            data[5]='O'
-            data[6]=zgloszenie
-            data[7]=datapom
-            wynik=(data[[4,0,1,2,3,3,5,6,7]])   #tabela x, y ,h, rzg, kod, rodzja pom -pom. na osnowę, data pomiaru, kerg.n
+        data = pd.read_csv(os.path.join(app.config['UPLOAD_FOLDER'], filename), sep='\t', header=None)  #utworzenie dataframe z pliku z pikietami
+        data[4]='GSPPRB'
+        data[5]='O'
+        data[6]=zgloszenie
+        data[7]=datapom
+        wynik=(data[[4,0,1,2,3,3,5,6,7]])   #tabela x, y ,h, rzg, kod, rodzja pom -pom. na osnowę, data pomiaru, kerg.n
 
        #dodanie dodatkowych danych do pliku wsadowego
         w_zakonczenie = '#Koniec'
@@ -204,23 +190,67 @@ def punkty_dxf():
         pliki = request.files.getlist('file[]')
         przeglad=ezdxf.new(dxfversion='R2010')
         model=przeglad.modelspace()
+        #import przeglądówek 2000 i 65 z obszarami
+        przeg2000=gpd.read_file('/home/adamjawor/obligeov0/temp_uploads/przeg.shp')
+        przeg65=gpd.read_file('/home/adamjawor/obligeov0/temp_uploads/przeg_65.shp')
+        #poligony okrelające obszar opracowania - wprowadzone ręcznie
+        oboprac=Polygon([(5572151.7553, 5707978.6366), (5577311.5050, 5710677.2032), (5578864.2224, 5707708.3554), (5573894.7270, 5704062.2555)])
+        oboprac65=Polygon([(3663170.6256, 5610718.0956),(3666428.0216, 5609062.2334),(3661369.7888, 5604823.2264),(3658953.2246, 5607333.5134)])
+        #kontrola danych
+        raport=['Wynik przyporzadkowania czesci obiektu oraz ewentualne bledy']   #utworzenie listy na raport błedów
+
         for file in pliki:
             nazwa = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], nazwa))
-            #tutaj kod przetwarzania plików
-            dane = pd.read_csv(os.path.join(app.config['UPLOAD_FOLDER'], nazwa), sep=' ', header=None)
-            color = random.randint(2,220) #losowy kolor dla operatu
+            raport.append(nazwa)
+            try:
+                #tutaj kod przetwarzania plików
+                dane = pd.read_csv(os.path.join(app.config['UPLOAD_FOLDER'], nazwa), sep=' ', header=None)
+                color = random.randint(2,220) #losowy kolor dla operatu
+                points = [Point(xyh) for xyh in zip(dane[2], dane[1], dane[3])]
+                point_collection = geometry.MultiPoint(list(points))
+            except Exception as komunikat:
+                raport.append(komunikat)
+                continue
+        #kontrola współrzędnych - czy znajdują się w obszarze opracowania
+            spr1=point_collection.within(oboprac)
+            spr2=point_collection.within(oboprac65)
+            if spr1 is False and spr2 is False:
+                raport.append('sprawdź współrzędne jakas jest poza zakresem opracowania w pliku: ')
+
+       #sprawdzenie w jakim obszarze są punkty z pliku ukl2000
+            for index, row in przeg2000.iterrows():
+                obszar=(row[6])
+                zawiera=point_collection.within(obszar)
+                przecina=point_collection.crosses(obszar)
+            #sprawdzenie zawierania i przecinania punktów przez obszar
+                if zawiera is True or przecina is True:
+                    wynik=(row[5])
+                    raport.append(' czesc='+wynik)
+                    break
+        #sprawdzenie w jakim obszarze są punkty z pliku ukl65
+            for index, row in przeg65.iterrows():
+                obszar65=(row[6])
+                zawiera65=point_collection.within(obszar65)
+                przecina65=point_collection.crosses(obszar65)
+            #sprawdzenie zawierania i przecinania punktów przez obszar
+                if zawiera65 is True or przecina65 is True:
+                    wynik=(row[5])
+                    raport.append(' czesc='+wynik)
+                    break
+
+
             #wczytaj punkty do dxf
             for index in dane.index:
                 wspolrzedne= (dane[2][index],dane[1][index])
                 tekst = dane[0][index]
                 #print (tekst+wspolrzedne)
                 model.add_text(tekst, dxfattribs={'layer':nazwa, 'color':color, 'height':5}).set_pos((wspolrzedne), align='LEFT')
+        #zapis pliku raportu
+            raportpd=pd.DataFrame(raport)
+            raportpd.to_csv (os.path.join(app.config['UPLOAD_FOLDER'], 'raport.txt'),sep='\t', index=False, header=False)
         #zapis pliku dxf
             przeglad.saveas(os.path.join(app.config['UPLOAD_FOLDER'],'wczytane_wsp.dxf'))
-        return send_from_directory(app.config['UPLOAD_FOLDER'], 'wczytane_wsp.dxf', as_attachment=True)
-
-
-if __name__ == '__main__':
-    app.run(debug = True)
-
+        #return send_from_directory(app.config['UPLOAD_FOLDER'], 'wczytane_wsp.dxf', as_attachment=True)
+        pobieranie =(app.config['UPLOAD_FOLDER'], 'wczytane_wsp.dxf')
+        return render_template('wynik_pktdodxf.html',raport=raport, pobieranie=pobieranie)
