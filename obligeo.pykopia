@@ -100,20 +100,10 @@ def wsad_geoinfo():
         f = request.files['file']
         filename = secure_filename(f.filename)
         f.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        #odczyt pliku i poprawa o spacje z przodu przed numeracja
-        plikOdcz = open(os.path.join(app.config['UPLOAD_FOLDER'], filename)).readlines()
-        plikPop = open(os.path.join(app.config['UPLOAD_FOLDER'], filename+'_pop.txt'),"w")
-        for line in plikOdcz:
-            line = re.sub(r'^\s+' , '', line)
-            print (line)
-            plikPop.write (line+'\n')
-        plikPop.close()
-        #ustalenie separatora
-        testowy = open(os.path.join(app.config['UPLOAD_FOLDER'], filename+'_pop.txt')).read()
+        testowy = open(os.path.join(app.config['UPLOAD_FOLDER'], filename)).read()
         separatory = [' ', '\t']
         podzial = csv.Sniffer().sniff(testowy, separatory).delimiter
         print ('sperator to '+podzial)
-        #przetworzenie pliku w zaleznosci od tego jaki separator jest w danym pliku
         if podzial ==' ' :
             plikOdcz = open(os.path.join(app.config['UPLOAD_FOLDER'], filename)).readlines()
             plikPop = open(os.path.join(app.config['UPLOAD_FOLDER'], filename+'_pop.txt'),"w")
