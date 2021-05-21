@@ -112,7 +112,7 @@ def wsad_geoinfo():
         testowy = open(os.path.join(app.config['UPLOAD_FOLDER'], filename+'_pop.txt')).read()
         separatory = [' ', '\t']
         podzial = csv.Sniffer().sniff(testowy, separatory).delimiter
-        print ('sperator to '+podzial)
+        print ('sperator to ' + podzial)
         #przetworzenie pliku w zaleznosci od tego jaki separator jest w danym pliku
         if podzial ==' ' :
             plikOdcz = open(os.path.join(app.config['UPLOAD_FOLDER'], filename)).readlines()
@@ -120,10 +120,10 @@ def wsad_geoinfo():
             for line in plikOdcz:
                 line = re.sub(r'^\s+' , '', line)
                 line = re.sub(r'\s+' , ' ', line)
-                print (line)
+                #print (line)
                 plikPop.write (line+'\n')
             plikPop.close()
-            data = pd.read_csv((os.path.join(app.config['UPLOAD_FOLDER'], filename+'_pop.txt')), sep=podzial, header=None)  #utworzenie dataframe z pliku z pikietami
+            data = pd.read_csv((os.path.join(app.config['UPLOAD_FOLDER'], filename+'_pop.txt')), sep=podzial, header=None, names=range(5))  #utworzenie dataframe z pliku z pikietami
             data[4]='GSPPRB'
             data[5]='O'
             data[6]=zgloszenie
