@@ -118,8 +118,8 @@ def wsad_geoinfo():
             plikOdcz = open(os.path.join(app.config['UPLOAD_FOLDER'], filename)).readlines()
             plikPop = open(os.path.join(app.config['UPLOAD_FOLDER'], filename+'_pop.txt'),"w")
             for line in plikOdcz:
-                line = re.sub(r'^\s+' , '', line)
-                line = re.sub(r'\s+' , ' ', line)
+                line = re.sub(r'^\s+' , '', line) #usuwa spacje na początku każdego wiersza
+                line = re.sub(r'\s+' , ' ', line) #zamienia wielokrotne spację na jedną spację
                 #print (line)
                 plikPop.write (line+'\n')
             plikPop.close()
